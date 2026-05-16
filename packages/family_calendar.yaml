@@ -13,22 +13,10 @@
 input_text:
   # Filter Toggles (RegEx: .* = Show, ^$ = Hide)
   calendar1_calendar_filter:
-    name: calendar1 Filter
+    name: Tony Filter
     initial: ".*"
   calendar2_calendar_filter:
-    name: calendar2 Filter
-    initial: ".*"
-  calendar3_calendar_filter:
-    name: calendar3 Filter
-    initial: ".*"
-  calendar4_calendar_filter:
-    name: calendar4 Filter
-    initial: ".*"
-  family_calendar_filter:
-    name: Family Filter
-    initial: ".*"
-  birthdays_calendar_filter:
-    name: Birthdays Filter
+    name: Rachel Filter
     initial: ".*"
   holidays_calendar_filter:
     name: Holidays Filter
@@ -47,11 +35,8 @@ input_select:
   calendar_select:
     name: Select Calendar
     options:
-      - calendar1
-      - calendar2
-      - calendar3
-      - calendar4
-      - Family
+      - Tony
+      - Rachel
     icon: mdi:calendar-check
   
   # The View selector (Week, Month, etc)
@@ -63,7 +48,7 @@ input_select:
       - Week
       - Biweek
       - Month
-    initial: Week
+    initial: Month
 
 input_datetime:
   # Event start/end times
@@ -92,7 +77,7 @@ input_boolean:
 script:
   # --- Filter Toggles ---
   calendar1_calendar_visible_filter:
-    alias: Toggle calendar1 Calendar
+    alias: Toggle Tony Calendar
     sequence:
       - action: input_text.set_value
         target:
@@ -101,49 +86,13 @@ script:
           value: "{% if is_state('input_text.calendar1_calendar_filter', '.*') %}^${% else %}.*{% endif %}"
 
   calendar2_calendar_visible_filter:
-    alias: Toggle calendar2 Calendar
+    alias: Toggle Rachel Calendar
     sequence:
       - action: input_text.set_value
         target:
           entity_id: input_text.calendar2_calendar_filter
         data:
           value: "{% if is_state('input_text.calendar2_calendar_filter', '.*') %}^${% else %}.*{% endif %}"
-
-  calendar3_calendar_visible_filter:
-    alias: Toggle calendar3 Calendar
-    sequence:
-      - action: input_text.set_value
-        target:
-          entity_id: input_text.calendar3_calendar_filter
-        data:
-          value: "{% if is_state('input_text.calendar3_calendar_filter', '.*') %}^${% else %}.*{% endif %}"
-
-  calendar4_calendar_visible_filter:
-    alias: Toggle calendar4 Calendar
-    sequence:
-      - action: input_text.set_value
-        target:
-          entity_id: input_text.calendar4_calendar_filter
-        data:
-          value: "{% if is_state('input_text.calendar4_calendar_filter', '.*') %}^${% else %}.*{% endif %}"
-
-  family_calendar_visible_filter:
-    alias: Toggle Family Calendar
-    sequence:
-      - action: input_text.set_value
-        target:
-          entity_id: input_text.family_calendar_filter
-        data:
-          value: "{% if is_state('input_text.family_calendar_filter', '.*') %}^${% else %}.*{% endif %}"
-
-  birthdays_calendar_visible_filter:
-    alias: Toggle Birthdays Calendar
-    sequence:
-      - action: input_text.set_value
-        target:
-          entity_id: input_text.birthdays_calendar_filter
-        data:
-          value: "{% if is_state('input_text.birthdays_calendar_filter', '.*') %}^${% else %}.*{% endif %}"
 
   holidays_calendar_visible_filter:
     alias: Toggle Holidays Calendar
@@ -164,14 +113,11 @@ script:
           # Map the Dropdown Name (Left) to your Entity ID (Right).
           # ====================================================================
           calendar_map:
-            "calendar1": "calendar.calendar1" #<--- UPDATE THIS ENTITY
-            "calendar2": "calendar.calendar2" #<--- UPDATE THIS ENTITY
-            "calendar3": "calendar.calendar3" #<--- UPDATE THIS ENTITY
-            "calendar4": "calendar.calendar4" #<--- UPDATE THIS ENTITY
-            "Family": "calendar.family" #<--- UPDATE THIS ENTITY
-          
-          # Selects the entity based on the map above
-          target_calendar: "{{ calendar_map.get(states('input_select.calendar_select'), 'calendar.family') }}" #<--- UPDATE THIS ENTITY
+            "Tony": "calendar.hansel_a_hernandez_gmail_com"
+            "Rachel": "calendar.calendar2" # <--- REPLACE with Rachel's calendar entity once she shares with Tony's Gmail
+
+          # Selects the entity based on the map above. Default to Tony if dropdown is somehow blank.
+          target_calendar: "{{ calendar_map.get(states('input_select.calendar_select'), 'calendar.hansel_a_hernandez_gmail_com') }}"
 
       - choose:
           # Scenario A: All Day Event
@@ -187,8 +133,13 @@ script:
                   summary: "{{ states('input_text.calendar_event_title') }}"
                   description: "{{ states('input_text.calendar_event_description') }}"
                   start_date: "{{ states('input_datetime.calendar_day_event_start') }}"
-                  end_date: "{{ states('input_datetime.calendar_day_event_end') }}"
-          
+                  # Google all-day end is exclusive: a same-day pick must send end = start + 1 day.
+                  end_date: >-
+                    {% set s = states('input_datetime.calendar_day_event_start') %}
+                    {% set e = states('input_datetime.calendar_day_event_end') %}
+                    {% set use = e if e >= s else s %}
+                    {{ (strptime(use, '%Y-%m-%d') + timedelta(days=1)).strftime('%Y-%m-%d') }}
+
           # Scenario B: Timed Event
           - conditions:
               - condition: state
@@ -202,7 +153,11 @@ script:
                   summary: "{{ states('input_text.calendar_event_title') }}"
                   description: "{{ states('input_text.calendar_event_description') }}"
                   start_date_time: "{{ states('input_datetime.calendar_event_start') }}"
-                  end_date_time: "{{ states('input_datetime.calendar_event_end') }}"
+                  # Forgive end <= start (common given the form's default times) by bumping to start + 1h.
+                  end_date_time: >-
+                    {% set s = states('input_datetime.calendar_event_start') %}
+                    {% set e = states('input_datetime.calendar_event_end') %}
+                    {% if e > s %}{{ e }}{% else %}{{ (strptime(s, '%Y-%m-%d %H:%M:%S') + timedelta(hours=1)).strftime('%Y-%m-%d %H:%M:%S') }}{% endif %}
 
       # Cleanup and Close
       - action: input_text.set_value

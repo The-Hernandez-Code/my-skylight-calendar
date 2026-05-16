@@ -73,3 +73,13 @@ Skylight:
   family-default-primary-color: "#4A90E2"
   birthdays-default-primary-color: "#33a02c"
   holidays-default-primary-color: "#ff7f00"
+
+  # Bright Clean Modern palette
+  sk-bg-card: "#ffffff"
+  sk-border-strong: "#c4cbd6"
+  sk-border-cell: "#d8dde6"
+  sk-text-primary: "#1a1f36"
+  sk-text-secondary: "#6b7280"
+  sk-text-weekend: "#d32f2f"
+  sk-today-fill: "#fb8072"
+  sk-button-inactive: "#cfd6e0"
