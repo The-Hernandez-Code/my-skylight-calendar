@@ -1,1 +1,20 @@
 custom_dashboard.yaml
+
+# Claude Code workspace state
+.claude/
+
+# Playwright MCP cache
+.playwright-mcp/
+
+# Local scratch
+.tmp/
+
+# Auto-backups created by scripts/pull-dashboard.ps1 before overwriting local
+dashboard.yaml.bak.*
+
+# Ad-hoc dashboard screenshots
+dashboard-current.png
+
+# Python bytecode (from scripts/pi/*.py if ever run locally)
+__pycache__/
+*.pyc
